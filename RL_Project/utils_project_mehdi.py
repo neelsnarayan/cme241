@@ -42,7 +42,7 @@ def get_next(date, data):
     
     return next_date, is_last
 
-def plot_plotly(df):
+def plot_plotly(df,title=None):
     """
     Plots an Ornstein-Uhlenbeck process using Plotly.
 
@@ -57,8 +57,26 @@ def plot_plotly(df):
     fig.add_trace(go.Scatter(x=df.index, y=df.iloc[:,0], mode='lines'))
 
     # Set titles and labels
-    fig.update_layout(xaxis_title='Date',
+    fig.update_layout(title=title, xaxis_title='Date',
                       yaxis_title='Value') # You can change the template as needed
 
     # Show plot
     fig.show()
+
+
+def plot_plotly_multiple(dfs):
+    # Create a plotly figure
+    fig = go.Figure()
+
+    for df in dfs:
+    # Add lineplot
+        fig.add_trace(go.Scatter(x=df.index, y=df.iloc[:,0], mode='lines'))
+
+        # Set titles and labels
+        fig.update_layout(xaxis_title='Date',
+                      yaxis_title='Value') # You can change the template as needed
+
+    # Show plot
+    fig.show()
+
+
