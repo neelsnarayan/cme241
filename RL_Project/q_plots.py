@@ -34,15 +34,17 @@ class QAnalyzer():
     def __init__(self,data,qvf):
         self.data = data
         self.qvf = qvf
+        self.S_min = data.min()[0]
+        self.S_max = data.max()[0]
 
     def plot_snapshot(self):
 
         fig = go.Figure()
 
-        for (p,a) in [(-1,-1),(-1,0),(-1,1),(0,-1),(0,0),(0,1), (1,-1),(1,0),(1,1)]:
+        for (p,a) in [(-1,1),(-1,0),(0,-1),(0,0),(0,1),(1,-1), (1,0)]:
 
             qvals = []
-            spotPrices = np.arange(100-2,100+2,0.01)
+            spotPrices = np.arange(self.S_min,self.S_max,(self.S_max-self.S_min)/100)
 
             for spot in spotPrices:
                 state = NonTerminal({
@@ -54,10 +56,17 @@ class QAnalyzer():
 
                 qvals.append(self.qvf((state,a)))
 
-            fig.add_trace(go.Scatter(x=spotPrices, y=qvals, mode='lines', name=f'pos : {p}, act : {a}'))
+            if a == -1:
+                line_color = 'red'
+            elif a == 1:
+                line_color = '#90EE90'
+            else:
+                line_color = 'black'
+
+            fig.add_trace(go.Scatter(x=spotPrices, y=qvals, mode='lines', name=f'pos : {p}, act : {a}',line=dict(color=line_color)))
 
         fig.update_layout(title='Q values for different (spot,action,position) sates',
-                        xaxis_title='Spot',
+                        xaxis_title='Spot at '+str(state.state["date"]),
                         yaxis_title='Q value')
 
         fig.show()

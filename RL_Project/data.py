@@ -49,15 +49,15 @@ def generate_ou_process(sigma, mu, kappa, start_date, end_date, S0=100):
     }, index=dates)
 
 
-def build_simulated_train_test(start='2019-01-01', end='2023-12-31', N = 100):
+def build_simulated_train_test(start='2019-01-01', end='2023-12-31', N = 100,mu=100,sigma = 10):
     #train
     train = []
     for _ in range(N):
-        df = generate_ou_process(sigma=0.1, mu=100, kappa=7, start_date=start, end_date=end)
+        df = generate_ou_process(sigma=sigma, mu=mu, kappa=7, start_date=start, end_date=end)
         train.append(df)
 
     #test
-    df = generate_ou_process(sigma=0.1, mu=100, kappa=7, start_date=start, end_date=end)
+    df = generate_ou_process(sigma=sigma, mu=mu, kappa=7, start_date=start, end_date=end)
     return train, df    
 
 

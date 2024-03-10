@@ -55,7 +55,16 @@ class Trading(MarkovDecisionProcess[Dict,int]):
         self.test = test
     
     def actions(self, state):
-        return [-1,0,1] #short hold buy
+        if state.state["position"] == 1: #we are long
+            acts = [-1,0] #we can close long pos. or do nothing
+        
+        if state.state["position"] == 1: #we are long
+            acts =  [0,1] #we can 
+        
+        else:
+            acts = [-1,0,1]
+        
+        return acts
   
     def step(self, state, action)->Distribution[Tuple[State[Dict],float]]:
         #get information about current state
@@ -91,3 +100,69 @@ class Trading(MarkovDecisionProcess[Dict,int]):
             return Choose( [generate_initial_state_from_data(train_) for train_ in self.train] )
         elif which == "test":
             return Constant(generate_initial_state_from_data(self.test))  
+
+
+    def build_q_approx(self):
+
+        """
+        
+        Builds q value approximator
+        Q : state -> float
+
+        essential input for the RL algorithms
+
+        """
+
+
+        ###-- features blocks --##
+        def intercept_feature(pos,act):
+            return lambda x: 1 if ((x[0].state["position"]==pos)and (x[1] == act )) else 0
+
+        def spot_feature(pos,act):
+            return lambda x: x[0].state["Spot"] if  ((x[0].state["position"]==pos)and (x[1] == act )) else 0
+
+        def spot_2_feature(pos, act):
+            return lambda x: x[0].state["Spot"]**2 if  ((x[0].state["position"]==pos)and (x[1] == act )) else 0
+
+
+        ###-- generate features together --##
+        def generate_features():
+            ffs = []
+            #pos = 0
+            ffs+=[
+                #linear dependency for short
+                intercept_feature(pos=0,act=-1),
+                spot_feature(pos=0,act=-1),
+
+                #constant dependency for hold
+                intercept_feature(pos=0, act=0),
+                
+                #linear dependency for buy
+                intercept_feature(pos=0,act=1),
+                spot_feature(pos=0,act=1),
+            ]
+            #pos = 1
+            ffs+=[
+                #linear dependency for close pos. 
+                intercept_feature(pos=1,act=-1),
+                spot_feature(pos=1,act=-1),
+
+                #constant dependency for hold
+                intercept_feature(pos=1, act=0),
+            ]
+
+            #pos = -1
+            ffs +=[
+                #linear dependency for close pos. 
+                intercept_feature(pos=-1,act=1),
+                spot_feature(pos=-1,act=1),
+
+                #constant dependency for hold
+                intercept_feature(pos=-1, act=0),
+            ]
+
+            return ffs
+
+        ## -- build linear function approximator -- ##
+        return LinearFunctionApprox.create(feature_functions=generate_features())
+
