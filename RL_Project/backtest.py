@@ -25,6 +25,8 @@ class Backtester():
     def __init__(self, trading, policy):
         self.trading = trading #MDP  
         self.policy = policy #policy for the MDP
+        self.lookback = None
+        self.data = None
 
     def get_returns(self):
 
@@ -36,6 +38,9 @@ class Backtester():
         # Loop through each element in the sequence
         for x in sequence:
             bt.append([x.reward, x.state.state["date"]])
+            #as we access x we populate the lookback and data attributes
+            self.data = x.state.state["data"]
+            self.lookback = x.state.state["lookback"]
 
         df = pd.DataFrame(bt, columns=['Reward', 'Date'])
         df['Date'] = pd.to_datetime(df['Date'])
@@ -49,4 +54,5 @@ class Backtester():
         """
         self.get_returns()
         sharpe = (np.sqrt(252)*self.returns.mean()/self.returns.std())[0]
-        u.plot_plotly((1+self.returns).cumprod(),title=f"Sharpe Ratio {round(sharpe,2)}")
+        cumulative_returns = np.exp(self.returns.cumsum()).iloc[:,0]
+        u.plot_backtest_summary( cumulative_returns, self.data, self.lookback ,title=f"Sharpe Ratio {round(sharpe,2)}")

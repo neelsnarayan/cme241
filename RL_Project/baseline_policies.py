@@ -52,3 +52,14 @@ class ThresholdTradingPolicy(Policy[Dict,int]):
             action = -1 #sell to exit long
 
         return Constant(action)
+
+class BuyAndHold(Policy[Dict,int]):
+    """
+    Simply buys the asset at time 0 and holds 
+    """
+    def act(self, state: NonTerminal[Dict])->Distribution[int]:
+        if state.state["time index"]==0:
+            action = 1
+        else:
+            action = 0
+        return Constant(action) 

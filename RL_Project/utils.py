@@ -4,6 +4,7 @@ import pandas as pd
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+from datetime import timedelta
 
 
 def get_next(date, data):
@@ -75,6 +76,45 @@ def plot_plotly_multiple(dfs):
         fig.update_layout(xaxis_title='Date',
                       yaxis_title='Value') # You can change the template as needed
 
+    # Show plot
+    fig.show()
+
+
+
+def plot_backtest_summary(cumulative_returns, data, lookback, title=None):
+    # Ensure cumulative_returns is a Series and capture its name, or set a default one
+    if isinstance(cumulative_returns, pd.DataFrame):
+        # Assuming cumulative_returns is the first column if it's accidentally a DataFrame
+        cumulative_returns = cumulative_returns.iloc[:, 0]
+    series_name = cumulative_returns.name if cumulative_returns.name else 'Value'
+    
+    # Determine the lookback start date
+    t2 = cumulative_returns.index[0]  # Assuming cumulative_returns is sorted
+    t1 = t2 - pd.Timedelta(days=lookback)
+    
+    # Create a series for the lookback period with value 1, with the same name as cumulative_returns
+    previous_indexes = pd.date_range(start=t1, end=t2, closed='left')
+    lookback_series = pd.Series(1, index=previous_indexes, name=series_name)
+    
+    # Concatenate lookback_series with cumulative_returns ensuring a single column result
+    combined_series = pd.concat([lookback_series, cumulative_returns])
+    
+    # Plot
+    fig = go.Figure()
+    
+    # Add cumulative returns line
+    fig.add_trace(go.Scatter(x=combined_series.index, y=combined_series, mode='lines', name='Cumulative Returns'))
+    
+    # Add a red vertical line at t2
+    fig.add_vline(x=t2, line=dict(color='Red', width=2), name='End of Lookback')
+    
+    # Add shading for the lookback period
+    fig.add_shape(type="rect", x0=t1, y0=min(combined_series), x1=t2, y1=max(combined_series),
+                  fillcolor="lightgrey", opacity=0.5, line_width=0)
+    
+    # Set titles and labels
+    fig.update_layout(title=title, xaxis_title='Date', yaxis_title='Value')
+    
     # Show plot
     fig.show()
 

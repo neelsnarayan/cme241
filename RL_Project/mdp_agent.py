@@ -20,19 +20,24 @@ from rl.function_approx import LinearFunctionApprox, AdamGradient
 
 
 
-def generate_initial_state_from_data(df):
+def generate_initial_state_from_data(df,lookback=30):
     """
     generates the initial state dictionnary from the dataframes
+    - lookback : initial start date requires a minimum of lookback days
     """
-    S0 = df.iloc[0][0]
-    t = df.index[0]
+    if lookback >= len(df):
+        print(f"Not enough data in df to incorporate lookback of {lookback} BDays !")
+    S0 = df.iloc[lookback][0]
+    t = df.index[lookback]
     pos = 0
     return NonTerminal(
         {
             "Spot" : S0,
-            "position" : 0,
+            "position" : pos,
             "date" : t,
-            "data" : df
+            "data" : df,
+            "lookback" : lookback,
+            "time index":0 #means we start
         }
     )
 
@@ -56,10 +61,10 @@ class Trading(MarkovDecisionProcess[Dict,int]):
     
     def actions(self, state):
         if state.state["position"] == 1: #we are long
-            acts = [-1,0] #we can close long pos. or do nothing
+            acts = [-1,0] #we can sell to close long pos. or do nothing
         
-        if state.state["position"] == 1: #we are long
-            acts =  [0,1] #we can 
+        if state.state["position"] == -1: #we are short
+            acts =  [0,1] #we can either hold or buy back
         
         else:
             acts = [-1,0,1]
@@ -67,23 +72,29 @@ class Trading(MarkovDecisionProcess[Dict,int]):
         return acts
   
     def step(self, state, action)->Distribution[Tuple[State[Dict],float]]:
-        #get information about current state
+
+        #Get information about current state
         S_t_1 = state.state["Spot"] #current spot, correponds to "t-1" if "t" is the time at the end of the step
         t_1 = state.state["date"]
         data = state.state["data"]
         pos = state.state["position"] #is +1  -1 or 0 
+        next_idx = state.state["time index"]+1
+        lookback = state.state["lookback"]
+
 
         #Fetch next spot value and compute the return
         t, is_last = u.get_next(t_1, data)
         S_t = data.loc[t][0]
-        r =  pos*(S_t - S_t_1)/S_t
+        r =  pos*np.log(S_t/S_t_1)#(S_t - S_t_1)/S_t use log returns so it is additive
 
-        #build next state
+        #Build next state
         next_state = {
             "Spot" :  S_t,
             "position" : np.sign(pos+action),
             "date" : t,
-            "data" : data
+            "data" : data,
+            "lookback":lookback,
+            "time index":next_idx
         }
         if is_last:
             next_state = Terminal(next_state)
@@ -113,7 +124,6 @@ class Trading(MarkovDecisionProcess[Dict,int]):
 
         """
 
-
         ###-- features blocks --##
         def intercept_feature(pos,act):
             return lambda x: 1 if ((x[0].state["position"]==pos)and (x[1] == act )) else 0
@@ -141,7 +151,7 @@ class Trading(MarkovDecisionProcess[Dict,int]):
                 intercept_feature(pos=0,act=1),
                 spot_feature(pos=0,act=1),
             ]
-            #pos = 1
+            #pos = 1s
             ffs+=[
                 #linear dependency for close pos. 
                 intercept_feature(pos=1,act=-1),
