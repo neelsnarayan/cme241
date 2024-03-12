@@ -55,9 +55,10 @@ class Trading(MarkovDecisionProcess[Dict,int]):
     - actions : hold, buy or sell
     """
 
-    def __init__(self,train,test):
+    def __init__(self,train,test,lookback=30):
         self.train = train
         self.test = test
+        self.lookback = lookback
     
     def actions(self, state):
         if state.state["position"] == 1: #we are long
@@ -86,7 +87,7 @@ class Trading(MarkovDecisionProcess[Dict,int]):
         t, is_last = u.get_next(t_1, data)
         S_t = data.loc[t][0]
         r =  pos*np.log(S_t/S_t_1)#(S_t - S_t_1)/S_t use log returns so it is additive
-
+     
         #Build next state
         next_state = {
             "Spot" :  S_t,
@@ -108,9 +109,9 @@ class Trading(MarkovDecisionProcess[Dict,int]):
         Generates the initial distribution of the state from the available training data
         """
         if which == "train":
-            return Choose( [generate_initial_state_from_data(train_) for train_ in self.train] )
+            return Choose( [generate_initial_state_from_data(train_,self.lookback) for train_ in self.train] )
         elif which == "test":
-            return Constant(generate_initial_state_from_data(self.test))  
+            return Constant(generate_initial_state_from_data(self.test,self.lookback))  
 
 
     def build_q_approx(self):
