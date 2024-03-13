@@ -204,41 +204,37 @@ class QAnalyzer():
 
 
 # Example time series data
-time = np.linspace(0, 10, 100)  # Replace with your actual time series data
-y_values = np.sin(time)  # Example line plot, replace with your actual data
+#time = np.linspace(0, 10, 100)  # Replace with your actual time series data
+#y_values = np.sin(time)  # Example line plot, replace with your actual data
 
 # Example value function (modify according to your actual function)
-def value_function(y):
-    return 1 - abs(y)  # Example function
+#def value_function(y):
+#    return 1 - abs(y)  # Example function
 
 # Generate heatmap data based on the value function
-y_range = np.linspace(-1, 1, 100)
-heatmap_z = np.array([[value_function(y) for y in y_range] for _ in time])
+#y_range = np.linspace(-1, 1, 100)
+#heatmap_z = np.array([[value_function(y) for y in y_range] for _ in time])
 
 # Custom colorscale (white to red, adjust as needed)
-colorscale = [
-    [0, "white"],  # Values at 0 will be white
-    [0.5, "red"],  # Values at 0.5 will be red
-    [1, "white"]   # Values at 1 will be white again
-]
+
 
 # Create the heatmap
-heatmap = go.Heatmap(
-    z=heatmap_z,
-    x=time,
-    y=y_range,
-    colorscale=colorscale,
-    showscale=False  # Hide the heatmap color scale
-)
+#heatmap = go.Heatmap(
+#   z=heatmap_z,
+#   x=time,
+#    y=y_range,
+#    colorscale=colorscale,
+#    showscale=False  # Hide the heatmap color scale
+#)
 
 # Create the line plot
-line_plot = go.Scatter(x=time, y=y_values, mode='lines', name='Line Plot')
+#line_plot = go.Scatter(x=time, y=y_values, mode='lines', name='Line Plot')
 
 # Create the figure and add the heatmap and line plot
-fig = go.Figure(data=[heatmap, line_plot])
+#fig = go.Figure(data=[heatmap, line_plot])
 
 # Customize layout
-fig.update_layout(title='Line Plot with Colored Background')
+#fig.update_layout(title='Line Plot with Colored Background')
 
 # Show the figure
-fig.show()
+#fig.show()
