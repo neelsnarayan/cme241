@@ -6,6 +6,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import timedelta
 
+import bisect
 
 def get_next(date, data):
     """
@@ -161,3 +162,31 @@ def sample_dataframes(df, start_trading, N, n, uniform=False, half_life=None):
         sampled_dfs.append(sampled_df)
     
     return sampled_dfs
+
+
+def find_indexes_bisect(x_range, x_inf, x_sup):
+    """
+    Find the indexes i_inf and i_sup such that x_range[i_inf:i_sup] is the closest approximation
+    of the interval [x_inf, x_sup] within the sorted array x_range using bisect.
+    """
+    i_inf = bisect.bisect_left(x_range, x_inf)
+    i_sup = bisect.bisect_right(x_range, x_sup)
+    return i_inf, i_sup
+
+
+def ts_features(df_,span=200):
+
+    df = df_.copy()
+
+    column_name = df.columns[0]
+
+    sigma_t = df[column_name].ewm(span=span, adjust=False).std()
+    mu_t = df[column_name].ewm(span=span, adjust=False).mean()
+
+    # Update the DataFrame with the new computations
+    df['mu_t'] = mu_t
+    df['sigma_t'] = sigma_t
+    df['S_down'] = mu_t - 1.5*sigma_t
+    df['S_up'] = mu_t + 1.5*sigma_t
+    df["z_score"] = (df[column_name] - mu_t)/(sigma_t)
+    return df

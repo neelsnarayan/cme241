@@ -1,0 +1,36 @@
+{
+    "os": "macOS-14.2.1-arm64-arm-64bit",
+    "python": "3.10.7",
+    "heartbeatAt": "2024-03-14T23:16:42.829521",
+    "startedAt": "2024-03-14T23:16:42.368444",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "RL_Project/test_wandb-jvsc-98580707-78f1-4de6-9b47-e64d59798aa54f058e50-40a9-464b-b0bd-8bcf0b02c39d.ipynb",
+    "codePathLocal": null,
+    "root": "/Users/mehdi/Desktop/cme241",
+    "git": {
+        "remote": "https://github.com/neelsnarayan/cme241.git",
+        "commit": "b17c4b284e92a01906539a621fc5f7f8e2ee387e"
+    },
+    "email": "mehdizhioua@hotmail.com",
+    "host": "DN526b3l.SUNet",
+    "username": "mehdi",
+    "executable": "/usr/local/bin/python3",
+    "cpu_count": 8,
+    "cpu_count_logical": 8,
+    "disk": {
+        "/": {
+            "total": 460.4317207336426,
+            "used": 452.91519927978516
+        }
+    },
+    "gpuapple": {
+        "type": "arm",
+        "vendor": "Apple"
+    },
+    "memory": {
+        "total": 16.0
+    }
+}

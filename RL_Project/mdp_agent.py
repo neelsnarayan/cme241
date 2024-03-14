@@ -20,26 +20,41 @@ from rl.function_approx import LinearFunctionApprox, AdamGradient
 
 
 
-def generate_initial_state_from_data(df,lookback=30):
+def generate_initial_state_from_data(df,lookback=30,span=200):
     """
     generates the initial state dictionnary from the dataframes
     - lookback : initial start date requires a minimum of lookback days
     """
+    df_ts_feature = u.ts_features(df,span=span)
+
     if lookback >= len(df):
         print(f"Not enough data in df to incorporate lookback of {lookback} BDays !")
+
     S0 = df.iloc[lookback][0]
     t = df.index[lookback]
     pos = 0
-    return NonTerminal(
-        {
+    mu_t = df_ts_feature.iloc[lookback]["mu_t"]
+    sigma_t = df_ts_feature.iloc[lookback]["sigma_t"]
+
+
+    state_dict = {
             "Spot" : S0,
             "position" : pos,
             "date" : t,
             "data" : df,
             "lookback" : lookback,
-            "time index":0 #means we start
+            "time index" : 0 ,
+            "ts_features" : df_ts_feature,
+            "mu_t" : mu_t,
+            "sigma_t" : sigma_t
         }
-    )
+
+
+
+    state =  NonTerminal(state_dict)
+    
+
+    return state
 
 class Trading(MarkovDecisionProcess[Dict,int]):
     """
@@ -81,13 +96,18 @@ class Trading(MarkovDecisionProcess[Dict,int]):
         pos = state.state["position"] #is +1  -1 or 0 
         next_idx = state.state["time index"]+1
         lookback = state.state["lookback"]
-
+        ts_feat = state.state["ts_features"]
 
         #Fetch next spot value and compute the return
         t, is_last = u.get_next(t_1, data)
         S_t = data.loc[t][0]
         r =  pos*np.log(S_t/S_t_1)#(S_t - S_t_1)/S_t use log returns so it is additive
-     
+        mu_t = ts_feat.loc[t]["mu_t"]
+        sigma_t = ts_feat.loc[t]["sigma_t"]
+
+
+
+
         #Build next state
         next_state = {
             "Spot" :  S_t,
@@ -95,8 +115,12 @@ class Trading(MarkovDecisionProcess[Dict,int]):
             "date" : t,
             "data" : data,
             "lookback":lookback,
-            "time index":next_idx
+            "time index":next_idx,
+            "ts_features":ts_feat,
+            "mu_t":mu_t,
+            "sigma_t":sigma_t
         }
+
         if is_last:
             next_state = Terminal(next_state)
         else:

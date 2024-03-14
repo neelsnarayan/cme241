@@ -25,8 +25,8 @@ def generate_ou_process(sigma, mu, kappa, start_date, end_date, S0=100):
 
     Parameters:
     - sigma: Volatility of the process.
-    - mu: Long-term mean level to which the process reverts.
-    - kappa: Rate of reversion to the mean.
+    - mu: Long-term mean level to which the process reverts. is a function of time step
+    - kappa: Rate of reversion to the mean. is a function of time step
     - start_date: Start date of the simulation as a string (YYYY-MM-DD).
     - end_date: End date of the simulation as a string (YYYY-MM-DD).
     - S0: Initial value of the process, default is 100.
@@ -38,18 +38,18 @@ def generate_ou_process(sigma, mu, kappa, start_date, end_date, S0=100):
     n = len(dates)
     prices = np.zeros(n)
     prices[0] = S0
-    dt = 1/252  # assuming 252 trading days in a year
+    #dt = 1/252  # assuming 252 trading days in a year
 
     for t in range(1, n):
-        dW = np.random.normal(0, np.sqrt(dt))  # increment of Wiener process
-        prices[t] = prices[t-1] + kappa * (mu - prices[t-1]) * dt + sigma * dW
+        dW = np.random.normal(0, 1)  # increment of Wiener process
+        prices[t] = prices[t-1] + kappa(t) * (mu(t) - prices[t-1]) + sigma(t) * dW
 
     return pd.DataFrame({
         'Value': prices
     }, index=dates)
 
 
-def build_simulated_train_test(start='2019-01-01', end='2023-12-31', N = 100,mu=100,sigma = 10,kappa=7):
+def build_simulated_train_test(start='2019-01-01', end='2023-12-31', N = 100,mu= lambda x: 100,sigma = lambda x: 0.2 ,kappa= lambda x: 1/10):
     #train
     train = []
     for _ in range(N):
@@ -59,36 +59,6 @@ def build_simulated_train_test(start='2019-01-01', end='2023-12-31', N = 100,mu=
     #test
     df = generate_ou_process(sigma=sigma, mu=mu, kappa=kappa, start_date=start, end_date=end)
     return train, df  
-
-def generate_ou_with_trend(sigma, mu_t, kappa, start_date, end_date, S0=100):
-    """
-    Generates a DataFrame with returns of an Ornstein-Uhlenbeck process with a time-varying mean level over specific dates.
-
-    Parameters:
-    - sigma: Volatility of the process.
-    - mu_t: Function that returns the long-term mean level to which the process reverts, as a function of time step.
-    - kappa: Rate of reversion to the mean.
-    - start_date: Start date of the simulation as a string (YYYY-MM-DD).
-    - end_date: End date of the simulation as a string (YYYY-MM-DD).
-    - S0: Initial value of the process, default is 100.
-
-    Returns:
-    - DataFrame with index as dates and a column 'Value' representing the evolution of the process.
-    """
-    dates = pd.date_range(start=start_date, end=end_date, freq='B')  # 'B' for business days
-    n = len(dates)
-    prices = np.zeros(n)
-    prices[0] = S0
-    dt = 1/252  # assuming 252 trading days in a year
-
-    for t in range(1, n):
-        dW = np.random.normal(0, np.sqrt(dt))  # increment of Wiener process
-        mu_current = mu_t(t)  # Calculate current mu based on the function provided
-        prices[t] = prices[t-1] + kappa * (mu_current - prices[t-1]) * dt + sigma * dW
-
-    return pd.DataFrame({
-        'Value': prices
-    }, index=dates)  
 
 
 class Train_Test_Builder():

@@ -63,3 +63,14 @@ class BuyAndHold(Policy[Dict,int]):
         else:
             action = 0
         return Constant(action) 
+
+class ThresholdsFromV(Policy[Dict,int]):
+    """
+    Analyzes the V function and buys when positive/sells when negative
+    """
+    def __init__(self, vf):
+        self.vf = vf
+
+    
+
+    

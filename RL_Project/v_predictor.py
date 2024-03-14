@@ -33,54 +33,105 @@ import backtest as btest
 from sklearn.linear_model import LinearRegression
 
 
-def get_sde_step(X_t_1,mu,sigma,kappa,time_step=0):
-    # This is a placeholder for the actual SDE step function you mentioned.
-    # It should return X_{t+dt} given the current X_t.
-    dt = (1/252)
-    dW = np.random.normal(0, np.sqrt(dt))  # increment of Wiener process
-    X_t = X_t_1 + kappa(time_step) * (mu(time_step)  - X_t_1) * dt + sigma(time_step)* dW #step is trend parameter
-    return X_t
+import numpy as np
+import plotly.graph_objects as go
 
+class Prediction:
+    def __init__(self, mu, kappa, sigma):
+        self.mu = mu
+        self.kappa = kappa
+        self.sigma = sigma
 
-class Prediction():
-
-
-    def __init__(self,vfs, params,gamma=0.9):
-
-        self.vfs = vfs #iterator of value functions for which we want to analyze the convergence
-        self.params = params  #parameters mu(t), sigma(t), kappa(t) of the OU process can be constants
-        self.gamma = gamma
-
-
-    def monte_carlo(self,x,num_simulations=100,num_steps=1000):
-
-        sigma = self.params["sigma"] #function giving sigma
-        kappa = self.params["kappa"] #function giving kappa
-        mu = self.params["mu"]
-
-        total_rewards = np.zeros(num_simulations)
-
-        gamma  = self.gamma
-    
-        for sim in range(num_simulations):
+    def monte_carlo_f(self, x, t_start , gamma, num_paths, N_fixed=100):
+        discounts = gamma ** np.arange(N_fixed)
+        sums_discounted_log_returns = np.zeros(num_paths)
+        
+        for i in range(num_paths):
             X_t = x
-            reward = 0
-            simu = [x]
-            for t in range(num_steps):
-                X_next = get_sde_step(X_t,mu,sigma=sigma,kappa=kappa,time_step=t)
-                reward += ( gamma ** t) * np.log(X_next / X_t)
-                X_t = X_next
-                simu.append(X_t)
+            for t in range(N_fixed):
+                dW = np.random.normal(0, 1)
+                X_t_next = X_t + self.kappa(t_start+t) * (self.mu(t_start+t) - X_t)  + self.sigma(t_start+t) * dW
+                log_return = np.log(X_t_next / X_t)
+                sums_discounted_log_returns[i] += discounts[t] * log_return
+                X_t = X_t_next
+        return np.mean(sums_discounted_log_returns)
 
-            total_rewards[sim] = reward
+
+    def sample_path(self, N_fixed=100):
+        """Generate a single sample path starting from mu(0) and the first value of t."""
+        x = self.mu(0)  # Initial state from mu at t=0
+        t = 0  # Starting time
+        path = [x]
         
-        expected_reward = np.mean(total_rewards)
-        return expected_reward
+        for _ in range(N_fixed):
+            dW = np.random.normal(0, 1)
+            x_next = x + self.kappa(t) * (self.mu(t) - x) + self.sigma(t) * dW
+            path.append(x_next)
+            x = x_next
+            t += 1  # Increment time
+        
+        return path
 
 
+    def generate_f_heatmap(self, t_range, gamma, num_paths, step_x = 2, N_fixed=100):
 
+        # Define a global x range that covers all possible dynamic ranges
+        x_min = min(self.mu(t)*(1 - 0.15*self.sigma(t)) for t in t_range)
+        x_max = max(self.mu(t)*(1 + 0.15*self.sigma(t)) for t in t_range)
+
+        #x_range = np.arange(x_min, x_max, step=step_x)  # Adjust the number of points as needed
+
+        x_range = np.linspace(x_min,x_max,num=20)
+        
+        # Initialize f_values with np.nan
+        f_values = np.full((len(t_range),len(x_range)), np.nan)
+
+        for j, t in enumerate(t_range):
+
+            range_inf = self.mu(t)*(1-0.1*self.sigma(t))
+            range_sup = self.mu(t)*(1+0.1*self.sigma(t))
+
+            i_inf,i_sup = u.find_indexes_bisect(x_range, range_inf, range_sup)
+
+            for i in range(i_inf,i_sup):
+                x = x_range[i]
+                f_values[j,i] = self.monte_carlo_f(x, t , gamma, num_paths, N_fixed)
+        return x_range, t_range, f_values
+
+    def plot_heatmap(self, x_range, t_range, f_values):
         
 
+        max_abs_value = np.max(np.abs(f_values))
+
+        # Customizing the color scale for correct positive (green) and negative (red) values representation
+        color_scale = [
+            [0.0, "red"],  # Negative values
+            [0.5, "white"],  # Values around zero
+            [1.0, "green"]  # Positive values
+        ]
+        
+        fig = go.Figure(data=go.Heatmap(
+            z=f_values.T,
+            x=t_range,
+            y=x_range,
+            coloraxis="coloraxis",
+            zmin=-max_abs_value, zmax=max_abs_value
+        ))
+
+        fig.update_layout(
+            coloraxis=dict(colorscale=color_scale, cmin=-max_abs_value, cmax=max_abs_value),
+            xaxis_title="Time Start (t)",
+            yaxis_title="Initial X_t value (x)",
+            title=r"Monte - Carlo estimation of f(x,t) = E(sum gamma^t log(X_{t+1}/X_t) | X_t = x"
+        )
+        
+
+        for _ in range(10):
+            sample_path = self.sample_path(len(t_range))
+            fig.add_trace(go.Scatter(x=t_range, y=sample_path, mode='lines', line=dict(width=2)))
+
+
+        fig.show()
 
 
 
