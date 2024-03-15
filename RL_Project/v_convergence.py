@@ -40,18 +40,21 @@ import wandb
 
 class V_Convergence_Analyzer():
 
-    def __init__(self,vf_iterator,V_star,log_="V_convergence"):
+    def __init__(self,vf_iterator,train_data,V_star,log_="V_convergence"):
 
+        self.train_data = train_data
         self.vf_iterator = vf_iterator
         self.V_star = V_star
         self.log_ = "V_convergence"
+    
+
 
     def run(self):
 
         # start a new wandb run to track this script
         wandb.init(
             # set the wandb project where this run will be logged
-            project="rl_project_test",
+            project="convergence of V",
             
             # track hyperparameters and run metadata
             config={

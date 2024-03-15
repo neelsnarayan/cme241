@@ -19,7 +19,7 @@ from rl.monte_carlo import epsilon_greedy_policy, greedy_policy_from_qvf, glie_m
 from rl.function_approx import LinearFunctionApprox, AdamGradient
 
 
-def generate_ou_process(sigma, mu, kappa, start_date, end_date, S0=100):
+def generate_ou_process(sigma, mu, kappa, start_date, end_date):
     """
     Generates a DataFrame with returns of an Ornstein-Uhlenbeck process over specific dates.
 
@@ -37,7 +37,7 @@ def generate_ou_process(sigma, mu, kappa, start_date, end_date, S0=100):
     dates = pd.date_range(start=start_date, end=end_date, freq='B')  # 'B' for business days
     n = len(dates)
     prices = np.zeros(n)
-    prices[0] = S0
+    prices[0] = mu(0)
     #dt = 1/252  # assuming 252 trading days in a year
 
     for t in range(1, n):

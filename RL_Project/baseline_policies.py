@@ -64,12 +64,41 @@ class BuyAndHold(Policy[Dict,int]):
             action = 0
         return Constant(action) 
 
-class ThresholdsFromV(Policy[Dict,int]):
+class ActionFromV(Policy[Dict,int]):
     """
     Analyzes the V function and buys when positive/sells when negative
     """
-    def __init__(self, vf):
+    def __init__(self, vf, enter_long, exit_long, enter_short, exit_short):
+        """
+        Setting the thresolds for trading decisions
+        """
         self.vf = vf
+        self.enter_long = enter_long
+        self.enter_short = enter_short
+        self.exit_long = exit_long
+        self.exit_short = exit_short
+
+    def act(self, state: NonTerminal[Dict])->Distribution[int]:
+
+        signal = -self.vf(state) 
+
+        pos = state.state["position"]
+
+        action = 0
+
+        if signal >= self.enter_short and pos == 0:
+            action = -1 #enter short
+
+        if signal <= self.exit_short and pos == -1:
+            action = 1  #buy back to exit short
+
+        if signal <= self.enter_long and pos == 0:
+            action = 1 #enter long
+
+        if signal >= self.enter_long and pos == 1:
+            action = -1 #sell to exit long
+
+        return Constant(action)
 
     
 

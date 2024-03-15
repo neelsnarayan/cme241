@@ -136,6 +136,9 @@ class Trading(MarkovDecisionProcess[Dict,int]):
             return Choose( [generate_initial_state_from_data(train_,self.lookback) for train_ in self.train] )
         elif which == "test":
             return Constant(generate_initial_state_from_data(self.test,self.lookback))  
+        
+    def set_v_approx(self,vf):
+        self.v_approx = vf
 
 
     def build_q_approx(self):
