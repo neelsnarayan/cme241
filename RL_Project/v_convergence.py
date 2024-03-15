@@ -34,49 +34,74 @@ import backtest as btest
 import v_predictor as v_true
 import datetime
 import random
+import v_plots2 as v2
 
-import wandb
+#import wandb
 
 
 class V_Convergence_Analyzer():
 
-    def __init__(self,vf_iterator,train_data,V_star,log_="V_convergence"):
+    def __init__(self,vf_iterator,trader,V_star,log_="V_convergence"):
 
-        self.train_data = train_data
+        self.trader = trader
         self.vf_iterator = vf_iterator
         self.V_star = V_star
-        self.log_ = "V_convergence"
-    
+
+    def get_v(self, num_iter = 1000):
+        v=None
+        for i,qvf in enumerate(self.vf_iterator):
+            v = qvf
+            if i>=num_iter:
+                break
+        self.v = v
 
 
-    def run(self):
+    def compare_v_V_star(self,v):
+
+        
+        history = [u.get_list_states(self.trader)]
+
+        V_analyze = v2.V_Analyzer_Mehdi(v,history)
+
+        x_range, t_range, f_values = V_analyze.generate_V_heatmap()
+
+        x_star, t_star, f_star  = self.V_star["x"], self.V_star["t"], self.V_star["f"]
+
+
+
+
+
+
+    #def run(self):
+
+
 
         # start a new wandb run to track this script
-        wandb.init(
-            # set the wandb project where this run will be logged
-            project="convergence of V",
+        #wandb.init(
+        #    # set the wandb project where this run will be logged
+        #    project="convergence of V",
             
-            # track hyperparameters and run metadata
-            config={
-            "learning_rate": 0.02,
-            "architecture": "CNN",
-            "dataset": "CIFAR-100",
-            "epochs": 10,
-            }
-        )
+        #    # track hyperparameters and run metadata
+        #    config={
+        #    "learning_rate": 0.02,
+        #    "architecture": "CNN",
+        #    "dataset": "CIFAR-100",
+        #    "epochs": 10,
+        #    }
+        #)
 
         # simulate training
-        epochs = 10
-        offset = random.random() / 5
-        for epoch in range(2, epochs):
-            acc = 1 - 2 ** -epoch - random.random() / epoch - offset
-            loss = 2 ** -epoch + random.random() / epoch + offset
-            
-            # log metrics to wandb
-            wandb.log({"acc": acc, "loss": loss})
+        #epochs = 10
+        #offset = random.random() / 5
+        #for epoch in range(2, epochs):
+        #    acc = 1 - 2 ** -epoch - random.random() / epoch - offset
+        #    loss = 2 ** -epoch + random.random() / epoch + offset
+        #    
+        #    # log metrics to wandb
+        #    wandb.log({"acc": acc, "loss": loss})
             
         # [optional] finish the wandb run, necessary in notebooks
-        wandb.finish()
+        #wandb.finish()
 
             
 

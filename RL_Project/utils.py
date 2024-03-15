@@ -5,7 +5,11 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from datetime import timedelta
-
+import data as dat
+import mdp_agent as ag
+import baseline_policies as bp
+import q_plots as qp
+import backtest as btest
 import bisect
 
 def get_next(date, data):
@@ -190,3 +194,19 @@ def ts_features(df_,span=200):
     df['S_up'] = mu_t + 1.5*sigma_t
     df["z_score"] = (df[column_name] - mu_t)/(sigma_t)
     return df
+
+
+def get_list_states(trd):
+
+    mrp = trd.apply_policy(bp.BuyAndHold())
+
+    start_states = trd.generate_start_state("train") # we take the test set data of the trading policy
+    sequence = trd.simulate_actions(start_states, bp.BuyAndHold())
+
+    states = [] #will be used to build the backtest dataframe
+
+    for x in sequence:
+
+        states.append(x.state)
+
+    return states
