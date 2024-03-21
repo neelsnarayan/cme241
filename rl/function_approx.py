@@ -885,6 +885,7 @@ if __name__ == '__main__':
         decay1=0.9,
         decay2=0.999
     )
+    
     ffs = [
         lambda _: 1.,
         lambda x: x[0],

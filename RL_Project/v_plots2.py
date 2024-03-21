@@ -37,9 +37,10 @@ import numpy as np
 import plotly.graph_objects as go
 
 class V_Analyzer_Mehdi:
-    def __init__(self, vf, states_history):
+    def __init__(self, vf, states_history,range_plot = 1):
         self.vf = vf
         self.states_history = states_history #list of list of states
+        self.range_plot = range_plot
   
 
     def get_v_value(self, x, t_start):
@@ -86,10 +87,19 @@ class V_Analyzer_Mehdi:
 
         for state_list in self.states_history:
 
+            #print("mu")
+            #print(state_list[t].state["mu_t"])
 
-            x_min_new = state_list[t].state["mu_t"]*(1-0.1*state_list[t].state["sigma_t"])
+            #print("sigma")
+            #print(state_list[t].state["sigma_t"])
 
-            x_max_new = state_list[t].state["mu_t"]*(1+0.1*state_list[t].state["sigma_t"])
+            #print("1-0.1sigma")
+
+            x_min_new = state_list[t].state["mu_t"]*(1-self.range_plot*state_list[t].state["sigma_t"])
+
+            #print(x_min_new)
+
+            x_max_new = state_list[t].state["mu_t"]*(1+self.range_plot*state_list[t].state["sigma_t"])
 
             if x_min_new <=x_min:
                 x_min = x_min_new
@@ -109,6 +119,9 @@ class V_Analyzer_Mehdi:
         for j, t in enumerate(t_range):
 
             range_inf, range_sup = self.get_min_max_spot_t(t)
+
+            #print("range inf",range_inf)
+            #print("range_sup",range_sup)
    
 
             i_inf,i_sup = u.find_indexes_bisect(x_range, range_inf, range_sup)
@@ -130,10 +143,13 @@ class V_Analyzer_Mehdi:
             [0.5, "white"],  # Values around zero
             [1.0, "green"]  # Positive values
         ]
+
+
+        adjusted_t_range = self.states_history[0][0].state["lookback"]+np.array(t_range)
         
         fig = go.Figure(data=go.Heatmap(
             z=f_values.T,
-            x=self.states_history[0][0].state["lookback"]+np.array(t_range), #v has started estimating after lookabck
+            x=adjusted_t_range, #v has started estimating after lookabck
             y=x_range,
             coloraxis="coloraxis",
             zmin=-max_abs_value, zmax=max_abs_value
@@ -151,7 +167,7 @@ class V_Analyzer_Mehdi:
             start_t = state_list[0].state["date"]
             y = state_list[0].state["data"].loc[start_t:].to_numpy().reshape(-1)
 
-            fig.add_trace(go.Scatter(x=t_range, y=y, mode='lines', line=dict(width=2)))
+            fig.add_trace(go.Scatter(x=adjusted_t_range, y=y, mode='lines', line=dict(width=2)))
         
 
         fig.show()

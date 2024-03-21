@@ -77,9 +77,10 @@ class Train_Test_Builder():
     
     """
 
-    def __init__(self,data, lookback=30, start_trading = None):
+    def __init__(self,data, lookback=30, start_trading = None, half_life = 100):
         self.data = data
         self.lookback = lookback
+        self.half_life = half_life
         if start_trading is not None:
             self.start_trading = start_trading
         else: #use 70%/30% split 
@@ -87,15 +88,15 @@ class Train_Test_Builder():
             date_at_70_percent = data.index[index_at_70_percent]
             self.start_trading = date_at_70_percent
 
-    def buil_test(self):
+    def build_test(self):
         start_trading = pd.to_datetime(self.start_trading)  # Convert start_date to datetime if it's a string
         lookback_date = start_trading - pd.offsets.BDay(self.lookback)
         self.test = self.data[lookback_date:]
 
 
     def build_train(self,N,length_episode):
-        self.train = u.sample_dataframes(self.data,self.start_trading,N,length_episode,uniform=True)
+        self.train = u.sample_dataframes(self.data,self.start_trading,N,length_episode,uniform=False,half_life=self.half_life)
 
     def build_train_test(self,N,length_episode):
-        self.buil_test()
+        self.build_test()
         self.build_train(N,length_episode)

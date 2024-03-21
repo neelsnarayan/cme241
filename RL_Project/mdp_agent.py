@@ -20,21 +20,43 @@ from rl.function_approx import LinearFunctionApprox, AdamGradient
 
 
 
-def generate_initial_state_from_data(df,lookback=30,span=200):
+def generate_initial_state_from_data(df,lookback=30,span=200,specify_start_date = False,start_date = None):
     """
     generates the initial state dictionnary from the dataframes
     - lookback : initial start date requires a minimum of lookback days
     """
     df_ts_feature = u.ts_features(df,span=span)
 
+
+
     if lookback >= len(df):
         print(f"Not enough data in df to incorporate lookback of {lookback} BDays !")
+    
 
-    S0 = df.iloc[lookback][0]
-    t = df.index[lookback]
-    pos = 0
-    mu_t = df_ts_feature.iloc[lookback]["mu_t"]
-    sigma_t = df_ts_feature.iloc[lookback]["sigma_t"]
+    if specify_start_date:
+
+
+        start_date = df.index[df.index >= start_date].min()
+
+        S0 = df.loc[start_date][0]
+        t = pd.to_datetime(start_date)
+        pos = 0
+        mu_t = df_ts_feature.loc[start_date]["mu_t"]
+        sigma_t = df_ts_feature.loc[start_date]["sigma_t"]
+        trend = df_ts_feature.loc[start_date]["mu_trend"]
+        ar1 = df_ts_feature.loc[start_date]["ar1_coeff"]
+
+    else:
+        S0 = df.iloc[lookback][0]
+        t = df.index[lookback]
+
+        pos = 0
+        mu_t = df_ts_feature.iloc[lookback]["mu_t"]
+        sigma_t = df_ts_feature.iloc[lookback]["sigma_t"]
+        trend = df_ts_feature.iloc[lookback]["mu_trend"]
+        ar1 = df_ts_feature.iloc[lookback]["ar1_coeff"]
+
+
 
 
     state_dict = {
@@ -46,7 +68,9 @@ def generate_initial_state_from_data(df,lookback=30,span=200):
             "time index" : 0 ,
             "ts_features" : df_ts_feature,
             "mu_t" : mu_t,
-            "sigma_t" : sigma_t
+            "sigma_t" : sigma_t,
+            "trend" : trend,
+            "ar1": ar1
         }
 
 
@@ -74,6 +98,7 @@ class Trading(MarkovDecisionProcess[Dict,int]):
         self.train = train
         self.test = test
         self.lookback = lookback
+        self.tc = 0.0005 #5 bps transaction costs 
     
     def actions(self, state):
         if state.state["position"] == 1: #we are long
@@ -101,11 +126,11 @@ class Trading(MarkovDecisionProcess[Dict,int]):
         #Fetch next spot value and compute the return
         t, is_last = u.get_next(t_1, data)
         S_t = data.loc[t][0]
-        r =  pos*np.log(S_t/S_t_1)#(S_t - S_t_1)/S_t use log returns so it is additive
+        r =  pos*np.log(S_t/S_t_1) - (0 if action == 0 else self.tc)  #(S_t - S_t_1)/S_t use log returns so it is additive
         mu_t = ts_feat.loc[t]["mu_t"]
         sigma_t = ts_feat.loc[t]["sigma_t"]
-
-
+        trend_t = ts_feat.loc[t]["mu_trend"]
+        ar1 = ts_feat.loc[t]["ar1_coeff"]
 
 
         #Build next state
@@ -118,7 +143,9 @@ class Trading(MarkovDecisionProcess[Dict,int]):
             "time index":next_idx,
             "ts_features":ts_feat,
             "mu_t":mu_t,
-            "sigma_t":sigma_t
+            "sigma_t":sigma_t,
+            "trend":trend_t,
+            "ar1":ar1
         }
 
         if is_last:
@@ -128,17 +155,24 @@ class Trading(MarkovDecisionProcess[Dict,int]):
         return Constant((next_state,r))
 
     
-    def generate_start_state(self,which = "train"):
+    def generate_start_state(self,which = "train",start=None):
         """
         Generates the initial distribution of the state from the available training data
         """
         if which == "train":
             return Choose( [generate_initial_state_from_data(train_,self.lookback) for train_ in self.train] )
         elif which == "test":
-            return Constant(generate_initial_state_from_data(self.test,self.lookback))  
+            if start is not None: #start date specified 
+                return Constant(generate_initial_state_from_data(self.test,self.lookback,specify_start_date=True,start_date=start))
+            else:
+                return Constant(generate_initial_state_from_data(self.test,self.lookback))
+
         
     def set_v_approx(self,vf):
         self.v_approx = vf
+
+
+    
 
 
     def build_q_approx(self):
@@ -158,10 +192,6 @@ class Trading(MarkovDecisionProcess[Dict,int]):
 
         def spot_feature(pos,act):
             return lambda x: x[0].state["Spot"] if  ((x[0].state["position"]==pos)and (x[1] == act )) else 0
-
-        def spot_2_feature(pos, act):
-            return lambda x: x[0].state["Spot"]**2 if  ((x[0].state["position"]==pos)and (x[1] == act )) else 0
-
 
         ###-- generate features together --##
         def generate_features():

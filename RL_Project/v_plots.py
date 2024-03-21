@@ -30,11 +30,11 @@ class VAnalyzer:
     Class to analyze the v value function
     """
 
-    def __init__(self, vvf, state_dicts):
+    def __init__(self, vvf, states):
         self.vvf = vvf
-        self.state_dicts = state_dicts
+        self.states = states
 
-    def createHeatMap(self):
+    def createHeatMap(self,T_max=None):
         """
         This function creates a heatmap as follows:
         on the x axis, we have the date
@@ -46,14 +46,14 @@ class VAnalyzer:
 
         iterationCounter = 0
 
-        for state_dict in self.state_dicts[0:500]:
+        for s in self.states:
             # Determine the date range based on the lookback period
-            
-            end_date = pd.to_datetime(state_dict.state["date"])
-            start_date = end_date - pd.Timedelta(days=state_dict.state["lookback"])
+
+            end_date = pd.to_datetime(s.state["date"])
+            start_date = end_date - pd.Timedelta(days=s.state["lookback"])
 
             # Filter the data to the lookback period
-            lookback_data = state_dict.state["data"].loc[start_date:end_date]
+            lookback_data = s.state["data"].loc[start_date:end_date]
 
             # Find the min and max spot prices within the lookback period
             spot_min = lookback_data['Value'].min()
@@ -66,6 +66,10 @@ class VAnalyzer:
             z = np.zeros((len(spotPrices)))
 
             for i, spot in enumerate(spotPrices):
+
+                s_dict = s.state
+                s_dict[spot] = 
+
                 state = NonTerminal({
                     "Spot": spot,
                     "position": 1,

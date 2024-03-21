@@ -36,45 +36,58 @@ import datetime
 import random
 import v_plots2 as v2
 
+
 #import wandb
 
 
 class V_Convergence_Analyzer():
 
-    def __init__(self,vf_iterator,trader,V_star,log_="V_convergence"):
+    def __init__(self,vf_iterator,trader,V_star=None):
 
         self.trader = trader
         self.vf_iterator = vf_iterator
         self.V_star = V_star
+        self.history  = [u.get_list_states(self.trader)]
+        self.SSE = []
+        self.v = None
 
-    def get_v(self, num_iter = 1000):
+
+    def get_v(self, num_iter = 1000,freqSSE=100):
         v=None
         for i,qvf in enumerate(self.vf_iterator):
             v = qvf
+            if i%freqSSE==0:
+                if not (self.V_star is  None):
+                    self.SSE.append(self.SSE_V(v))
             if i>=num_iter:
                 break
-        self.v = v
+            self.v = v
+
+    def plot_v_heat(self):
+        x_range, t_range, f_values = v2.V_Analyzer_Mehdi(self.v,self.history).generate_V_heatmap()
+        u.plot_heat(x_range,t_range,f_values)
 
 
-    def compare_v_V_star(self,v):
-
-        
-        history = [u.get_list_states(self.trader)]
-
-        V_analyze = v2.V_Analyzer_Mehdi(v,history)
-
+    def SSE_V(self,v):
+        V_analyze = v2.V_Analyzer_Mehdi(v,self.history)
         x_range, t_range, f_values = V_analyze.generate_V_heatmap()
-
+        t_range = np.array(t_range)
         x_star, t_star, f_star  = self.V_star["x"], self.V_star["t"], self.V_star["f"]
+        return u.SSE_interpolated(x_range,t_range,x_star,t_star,f_star.T,f_values.T)
 
+    def plot_interpolated(self):
+        x_range, t_range, f_values = v2.V_Analyzer_Mehdi(self.v,self.history).generate_V_heatmap()
+        t_range = np.array(t_range)
+        x_star, t_star, f_star  = self.V_star["x"], self.V_star["t"], self.V_star["f"]
+        x_,t_,f_V,f_s = u.interpolate2D_heatmaps(x_range, t_range, x_star, t_star, f_star.T,f_values.T)
+        u.plot_heat(x_,t_, f_V.T,title="estimated")
+        u.plot_heat(x_,t_, f_s.T,title="true")
 
-
+    
 
 
 
     #def run(self):
-
-
 
         # start a new wandb run to track this script
         #wandb.init(
